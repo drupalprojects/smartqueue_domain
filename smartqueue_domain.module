@@ -1,0 +1,37 @@
+<?php
+
+/**
+ * Implements hook_nodequeue_info().
+ */
+function smartqueue_domain_nodequeue_info() {
+  return array(
+    'smartqueue_domain' => array(
+      'title' => t('Domain smartqueue'),
+      'description' => t('Domian smartqueue is a queue that has subqueues for each domain inside your site'),
+    )
+  );
+}
+
+/**
+ * Implements hook_nodequeue_subqueues().
+ */       
+function smartqueue_domain_nodequeue_subqueues(&$queue, $node) {
+  smartqueue_domain_check_subqueues($queue);
+  $domain_name = domain_get_domain();
+  $refs = array('domain_' . $domain_name['sitename']);
+  return $refs;
+}
+
+/**
+ * Check the current queue and add the domains subqueues if they don't exist.
+ */ 
+function smartqueue_domain_check_subqueues(&$queue) {
+  $domains=domain_domains();
+  foreach($domains as $id => $domain) {
+    $ref = 'domain_' . $domain['sitename'];
+    $subqueue = nodequeue_load_subqueues_by_reference(array($queue->qid => array($ref)));
+    if (empty($subqueue)) {
+      nodequeue_add_subqueue($queue, $domain['sitename'], $ref);
+    }
+  }
+}
