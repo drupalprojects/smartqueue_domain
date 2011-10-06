@@ -1,1 +1,7 @@
 name = Smartqueue domain
+description = Provides a Nodequeue for each enabled domain.
+package = Nodequeue
+core = 7.x
+dependencies[] = domain
+dependencies[] = nodequeue
+
