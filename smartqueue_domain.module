@@ -126,8 +126,7 @@ function smartqueue_domain_subqueue_access($subqueue, $account, $queue){
     unset($user_domains[-1]);
   }
   if ((in_array($subqueue_info[3], $user_domains) && user_access('edit domain content'))  
-     || user_access('administer nodequeue')  
-     || user_access('manipulate queues')  
+     || user_access('administer nodequeue')
      || user_access('manipulate all queues')  
      || user_access('administer modules'))
     return true;
