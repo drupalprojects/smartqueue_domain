@@ -15,11 +15,14 @@ class smartqueue_domain_handler_filter_in_domain extends views_handler_filter_bo
       }
     }
     $subqueues = nodequeue_load_subqueues_by_queue($qid);
+    $sqid = array();
     foreach ($subqueues as $subqueue) {
       if (smartqueue_domain_views_check_subqueue($subqueue)) {
         $sqid[] = $subqueue->sqid;
       }
     }
-    $this->query->add_where($this->options['group'], $this->table_alias . ".sqid",  $sqid, "IN");
+    if (!empty($sqid)) {
+      $this->query->add_where($this->options['group'], $this->table_alias . ".sqid",  $sqid, "IN");
+    }
   }
 }

@@ -6,7 +6,7 @@ dependencies[] = domain
 dependencies[] = nodequeue
 
 ; Includes
-files[] = smartqueue_domian.views.inc
+files[] = smartqueue_domain.views.inc
 
 ; Views Handlers
 files[] = smartqueue_domain_handler_filter_in_domain.inc
