@@ -22,7 +22,7 @@ class smartqueue_domain_handler_filter_in_domain extends views_handler_filter_bo
       }
     }
     if (!empty($sqid)) {
-      $this->query->add_where($this->options['group'], $this->table_alias . ".sqid",  $sqid, "IN");
+      $this->query->add_where($this->options['group'], $this->table_alias . ".sqid",  $sqid, ($this->value) ? "IN" : "NOT IN");
     }
   }
 }
