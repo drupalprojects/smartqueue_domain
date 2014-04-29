@@ -11,7 +11,7 @@ function smartqueue_domain_views_api() {
 
 /**
  * Implements hook_init().
- */  
+ */
 function smartqueue_domain_init() {
   global $_domain;
   if (arg(0) == 'admin' && arg(1) == 'structure' && arg(2) == 'nodequeue' && is_numeric(arg(3)) && arg(4) == 'view' && is_numeric(arg(5))) {
@@ -98,6 +98,13 @@ function smartqueue_domain_check_subqueues(&$queue) {
       nodequeue_add_subqueue($queue, $queue->title . ' - ' . $domain['sitename'], $ref);
     }
   }
+}
+
+/**
+ * Implements hook_nodequeue_form_submit_finish().
+ */
+function smartqueue_domain_nodequeue_form_submit_finish($queue, &$form_state) {
+  smartqueue_domain_check_subqueues($queue);
 }
 
 /**
