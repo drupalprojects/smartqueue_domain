@@ -14,19 +14,29 @@ function smartqueue_domain_views_api() {
  */
 function smartqueue_domain_init() {
   global $_domain;
+  
+  // Check to see if we are administering a smartqueue.
   if (arg(0) == 'admin' && arg(1) == 'structure' && arg(2) == 'nodequeue' && is_numeric(arg(3)) && arg(4) == 'view' && is_numeric(arg(5))) {
-    $subqueue_id = arg(5);
-    $queue = nodequeue_load_subqueues(array($subqueue_id));
-    $queue_info = explode(':', $queue[$subqueue_id]->reference);
-    $domains = domain_domains();
-    if (isset($queue_info[3])) {
-      $domain = $domains[$queue_info[3]];
-      if (!isset($domain['domain_id'])) {
-        return;
-      }
-      $path = isset($_GET['q']) ? $_GET['q'] : '';
-      if ($_domain['domain_id'] != $domain['domain_id']) {
-        drupal_goto($domain['path'] . $path);
+    
+    // If "Force domain editing from the primary domain" is enabled, redirect to
+    // primary domain; otherwise redirect to smartqueue's domain. 
+    if (variable_get('domain_edit_on_primary', 1)) {
+      domain_check_primary();
+    }  
+    else {
+      $subqueue_id = arg(5);
+      $queue = nodequeue_load_subqueues(array($subqueue_id));
+      $queue_info = explode(':', $queue[$subqueue_id]->reference);
+      $domains = domain_domains();
+      if (isset($queue_info[3])) {
+        $domain = $domains[$queue_info[3]];
+        if (!isset($domain['domain_id'])) {
+          return;
+        }
+        $path = isset($_GET['q']) ? $_GET['q'] : '';
+        if ($_domain['domain_id'] != $domain['domain_id']) {
+          drupal_goto($domain['path'] . $path);
+        }
       }
     }
   }
