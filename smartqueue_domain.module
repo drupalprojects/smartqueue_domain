@@ -42,36 +42,6 @@ function smartqueue_domain_init() {
   }
 }
 
-function smartqueue_domain_get_sqid_map() {
-  static $map = array();
-  if (!$map) {
-    $result = db_select('nodequeue_subqueue', 'n')
-      ->fields('n', array('sqid', 'title'))->execute();
-    while ($get = $result->fetchObject()) {
-      $map[$get->title] = $get->sqid;
-    }
-  }
-  return $map;
-}
-
-function smartqueue_domain_get_all_sqids($page_size = 0, $pager_element = 0, $bypass_cache = FALSE) {
-  $cache = &drupal_static(__FUNCTION__, array());
-  if ($bypass_cache || empty($cache[$page_size])) {
-    $query = db_select('nodequeue_subqueue', 'nsq')
-      ->fields('nsq', array('sqid'));
-    if (!empty($page_size)) {
-      $query = $query->extend('PagerDefault')
-        ->extend('TableSort')
-        ->limit($page_size)
-        ->element($pager_element);
-    }
-    $qids = $query->execute()->fetchAllKeyed(0, 0);
-    $cache[$page_size] = $qids;
-  }
-  return $cache[$page_size];
-}
-
-
 /**
  * Implements hook_nodequeue_info().
  */
