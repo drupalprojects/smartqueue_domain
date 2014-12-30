@@ -70,7 +70,7 @@ function smartqueue_domain_nodequeue_subqueues(&$queue, $node) {
  * Check the current queue and add the domains subqueues if they don't exist.
  */
 function smartqueue_domain_check_subqueues(&$queue) {
-  $domains = domain_domains();
+  $domains = domain_domains(TRUE);
   foreach ($domains as $id => $domain) {
     $ref = $queue->name . ':domain:' . $domain['machine_name'] . ':' . $domain['domain_id'];
     $subqueue = nodequeue_load_subqueues_by_reference(array($queue->qid => array($ref)));
@@ -78,6 +78,62 @@ function smartqueue_domain_check_subqueues(&$queue) {
       nodequeue_add_subqueue($queue, $queue->title . ' - ' . $domain['sitename'], $ref);
     }
   }
+}
+
+/**
+ * Implements hook_domain_insert().
+ */
+function smartqueue_domain_domain_insert($domain) {
+  $smartqueue_queues = smartqueue_domain_get_queues();
+  foreach ($smartqueue_queues as $queue) {
+    smartqueue_domain_check_subqueues($queue);
+  }
+}
+
+/**
+ * Implements hook_domain_delete().
+ */
+function smartqueue_domain_domain_delete($domain, $form_values = array()) {
+  $subqueues = smartqueue_domain_get_subqueues_by_domain($domain);
+  if (!empty($subqueues)) {
+    foreach($subqueues as $subqueue) {
+      nodequeue_remove_subqueue($subqueue->sqid);
+    }
+  }
+}
+
+/**
+ * Helper function. Get all "smartqueue" queues belonging to this module.
+ *
+ * @return
+ *   An array of queues, keyed by queue id.
+ */
+function smartqueue_domain_get_queues() {
+  $smartqueue_queues = array();
+  $queues = nodequeue_load_queues(nodequeue_get_all_qids());
+  foreach ($queues as $qid => $queue) {
+    if ($queue->owner == 'smartqueue_domain') {
+      $smartqueue_queues[$qid] = $queue;
+    }
+  }
+  return $smartqueue_queues;
+}
+
+/**
+ * Helper function. Get all subqueues belonging to a domain.
+ *
+ * @param $domain
+ *   A domain object.
+ * @return
+ *   An array of subqueues, keyed by subqueue id.
+ */
+function smartqueue_domain_get_subqueues_by_domain($domain) {
+  $smartqueue_queues = smartqueue_domain_get_queues();
+  $references = array();
+  foreach ($smartqueue_queues as $queue) {
+    $references[$queue->qid] = array($queue->name . ':domain:' . $domain['machine_name'] . ':' . $domain['domain_id']);
+  }
+  return nodequeue_load_subqueues_by_reference($references);
 }
 
 /**

@@ -1,0 +1,148 @@
+<?php
+
+/**
+ * @file
+ * Simpletest for Smartqueue domain module.
+ */
+
+class SmartqueueDomainTestCase extends DomainTestCase {
+
+  public function setUp($list = array()) {
+    $list[] = 'smartqueue_domain';
+    parent::setUp($list);
+  }
+
+  /**
+   * Helper function. Create a smartqueue.
+   *
+   * @return
+   *  The id of the created smartqueue.
+   */
+  public function smartqueueDomainCreateSmartqueue() {
+
+    // The identifier for this type of smartqueue.
+    $queue = 'smartqueue_domain';
+
+    // Populate and submit the form.
+    $name = $this->randomName(8);
+    $edit = array(
+      'title' => $name,
+      'name' => strtolower($name),
+    );
+    $this->drupalGet('admin/structure/nodequeue/add/' . $queue);
+    $this->drupalPost(NULL, $edit, format_string('Submit'));
+
+    // Query the database for the new smartqueue id.
+    $qid = db_query("SELECT qid FROM {nodequeue_queue} WHERE title = :name AND owner = :queue LIMIT 1", array(':queue' => $queue, ':name' => $name))->fetchField();
+
+    return $qid;
+  }
+
+  /**
+   * Helper function. Queries the database for all subqueues based on given
+   * smartqueue id ($qid).
+   *
+   * @param $qid
+   *  The id of the smartqueue.
+   * @return
+   *  An array of subqueue ids, keyed by domain id.
+   */
+  public function smartqueueDomainGetSqids($qid) {
+    $sqids = array();
+    if ($qid) {
+      // Query database for all existing subqueues attached to this smartqueue.
+      $result = db_query("SELECT sqid, reference FROM {nodequeue_subqueue} WHERE qid = " . $qid);
+      foreach ($result as $record) {
+        $parts = explode(':', $record->reference);
+        $sqids[$parts[3]] = $record->sqid;
+      }
+    }
+    else {
+      // There was a problem with our smartqueue id.
+      $this->fail(format_string('$qid is NULL or empty.'));
+    }
+    return $sqids;
+  }
+
+}
+
+class SmartqueueDomainAdminTest extends SmartqueueDomainTestCase {
+
+  function setUp($list = array()) {
+    parent::setUp($list);
+  }
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Administer domain smartqueues',
+      'description' => 'Test administration tasks related to domain smartqueues.',
+      'group' => 'Smartqueue domain',
+    );
+  }
+
+  /**
+   * Tests creation and deleted of subqueues.
+   */
+  function testCreateSubqueues() {
+
+    // Handle user.
+    $user = $this->drupalCreateUser(array('administer nodequeue'));
+    $this->drupalLogin($user);
+
+    // Create some secondary domains (primary domain is already created).
+    $result = $this->domainCreateDomains();
+
+    // ---- 1 ----
+    // First, let's test that a subqueue will be automatigically created for
+    // each domain when a smartqueue is created.
+
+    // Create a smartqueue.
+    $qid = $this->smartqueueDomainCreateSmartqueue();
+
+    // Get ids for all created subqueues.
+    $sqids = $this->smartqueueDomainGetSqids($qid);
+
+    // Assert that a subqueue was created for each domain. We need to call
+    // domain_domains() to retrieve all domains (including default).
+    $domains = domain_domains(TRUE);
+    foreach ($domains as $domain) {
+      $this->assertTrue(isset($sqids[$domain['domain_id']]), format_string('Subqueue successfully create for domain %domain_id.', array('%domain_id' => $domain['domain_id'])));
+    }
+
+    // Double check that the number of subqueues matches the number of domains.
+    $this->assertTrue(count($domains) == count($sqids), format_string('%num subqueues successfully created.', array('%num' => count($sqids))));
+
+    // ---- 2 ----
+    // Second, test that a new subqueue will be added to our smartqueue when
+    // a new domain record is created.
+
+    // Create a new domain.
+    $new_result = $this->domainCreateDomains(array('four'));
+
+    // Get new domain id.
+    $new_domain_id = $new_result['four']['domain_id'];
+
+    // Get ids for all subqueues.
+    $sqids = $this->smartqueueDomainGetSqids($qid);
+
+    // Assert that a new subqueue was created for the new domain.
+    $this->assertTrue(isset($sqids[$new_domain_id]), format_string('After new domain record (%domain_id) added, subqueue for domain successfully created.', array('%domain_id' => $new_domain_id)));
+
+    // ---- 3 ----
+    // Finally, test that a subqueue intended for a domain will disappear
+    // once that domain record is deleted.
+
+    // Get id for the soon-to-be deleted domain.
+    $deleted_domain_id = $result['three']['domain_id'];
+
+    // Delete the domain.
+    domain_delete($result['three']);
+
+    // Get ids for all subqueues.
+    $sqids = $this->smartqueueDomainGetSqids($qid);
+
+    // Assert that a subqueue no longer exists for the deleted domain.
+    $this->assertTrue(!isset($sqids[$deleted_domain_id]), format_string('After domain record (%domain_id) deleted, subqueue for domain successfully deleted.', array('%domain_id' => $deleted_domain_id)));
+  }
+
+}
