@@ -149,7 +149,6 @@ function smartqueue_domain_nodequeue_form_submit_finish($queue, &$form_state) {
 function smartqueue_domain_views_check_subqueue($queue) {
   $domain = domain_get_domain();
   $queue_info = explode(':', $queue->reference);
-  $domain_name = $queue_info[3];
   if (isset($queue_info[3])) {
     $domain_id = $queue_info[3];
     if ($domain['domain_id'] == $domain_id) {
